@@ -3,7 +3,14 @@
 
 /* Real, scrollable interactive lock and passcode - no screenshot as UI */
 .lock-screen{touch-action:pan-y}.lockHint{position:absolute;bottom:146px;left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 6px #0009;font-size:14px;z-index:2;animation:hint 2.8s infinite}@keyframes hint{50%{opacity:.48}}.lockInfo{margin-top:62px}.lockInfo .clock{font-weight:250;font-size:clamp(78px,23vw,105px);letter-spacing:-4px;line-height:1.15;text-shadow:0 2px 18px #0003}.lockInfo .date{font-weight:650;font-size:19px}.passPanel{display:none;position:absolute;inset:0;z-index:10;background:linear-gradient(160deg,#41383fcd,#161720de);backdrop-filter:blur(27px);-webkit-backdrop-filter:blur(27px);color:white;flex-direction:column;align-items:center;padding:23vh 28px 54px;justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.passPanel.visible{display:flex}.passPanel p{font-size:20px;font-weight:600;margin:0 0 20px}.passDots{display:flex;gap:19px;margin-bottom:28px}.passDots i{height:14px;width:14px;border:1.5px solid white;border-radius:50%;background:transparent}.passDots i.filled{background:white}.passGrid{display:grid;grid-template-columns:repeat(3, minmax(60px,80px));gap:13px 19px;justify-content:center}.passGrid button{height:clamp(61px,8.7vh,75px);border-radius:50%;background:#ffffff36;border:0;color:white;font-size:30px;font-weight:300;touch-action:manipulation}.passGrid button:active{background:#ffffff88}.passGrid button small{font-size:9px;display:block;letter-spacing:2px;margin-top:-3px;font-weight:500}.passCancel{margin-top:24px;background:none;color:white;border:0}.screen .scroll,.screen [id$="Scroll"],#chatScroll,#kakaoList,#posts,#safariScroll{touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;min-height:0}.screen button{touch-action:manipulation}.screen{overscroll-behavior:contain}.passPanel .homebar{display:none}.wallpaper:before{pointer-events:none}.chatBody{min-height:0}.scroll input,.scroll textarea{touch-action:auto}
-</style></head><body><div class="phone" id="phone">
+</style>
+/* Refinement: touch-scrolling remains native inside each app. */
+<style id="wish-ux-polish">
+.scroll, #chatScroll { overflow-y:auto !important; -webkit-overflow-scrolling:touch !important; touch-action:pan-y !important; }
+.wish-unread{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 6px;border-radius:12px;background:#e8493f;color:white;font-size:11px;font-weight:700;margin-left:6px}
+#chatMessages{overflow-anchor:auto}
+</style>
+</head><body><div class="phone" id="phone">
 <section id="lock" class="screen active wallpaper lock-screen"><div class="status lightStatus"><div><span id="lockCarrier">SKT</span></div><div class="dynamic"></div><div class="signals"><svg class="sigSvg" viewBox="0 0 20 17"><rect x="1" y="11" width="3" height="5" rx="1"/><rect x="6" y="8" width="3" height="8" rx="1"/><rect x="11" y="4" width="3" height="12" rx="1"/><rect x="16" y="1" width="3" height="15" rx="1"/></svg><svg class="wifiSvg" viewBox="0 0 24 18"><path d="M2 5Q12 -3 22 5M6 10Q12 5 18 10M10 15Q12 13 14 15"/></svg><span class="battery">82</span></div></div><div class="lockInfo"><div>♙</div><div class="date" id="lockDate">10월 25일 일요일</div><div class="clock" id="lockClock">12:43</div></div><div class="lockHint" id="lockHint">위로 밀어 잠금 해제</div><div class="passPanel" id="passPanel" aria-hidden="true"><p>암호 입력</p><div class="passDots" id="passDots"><i></i><i></i><i></i><i></i></div><div class="passGrid" id="passGrid"></div><button type="button" class="passCancel" onclick="hidePasscode()">취소</button></div><div class="locktools"><button onclick="toast('손전등')">♜</button><button onclick="toast('카메라')">◎</button></div><button class="homebar lightBar" onclick="showPasscode()" aria-label="잠금 해제"></button></section>
 <section id="home" class="screen wallpaper home-screen"><div class="status lightStatus"><span id="homeClock">12:43</span><div class="dynamic"></div><div class="signals"><svg class="sigSvg" viewBox="0 0 20 17"><rect x="1" y="11" width="3" height="5" rx="1"/><rect x="6" y="8" width="3" height="8" rx="1"/><rect x="11" y="4" width="3" height="12" rx="1"/><rect x="16" y="1" width="3" height="15" rx="1"/></svg><svg class="wifiSvg" viewBox="0 0 24 18"><path d="M2 5Q12 -3 22 5M6 10Q12 5 18 10M10 15Q12 13 14 15"/></svg><span class="battery">82</span></div></div><div class="homeContent"><div class="widgets"><button class="widget" onclick="go('calendar')"><small style="color:#e24b4b">토요일</small><strong id="widgetDay">24</strong><div style="margin-top:25px"><span class="event">조용히 과제하기<br><small>오전 10:00</small></span><span class="event">경영 팀플 자료조사<br><small>오후 2:00</small></span></div></button><button class="widget memo" onclick="go('notes')"><div class="memoCap">메모</div><div class="memoBody"><b>📌 [필독] 이용 안내</b><small>트위터 버전 안내</small><br><b id="widgetNoteTitle">올리브영</b><small id="widgetNoteBody">일소 피지 연화제 사기</small></div></button></div><div class="appgrid" id="appgrid"></div><div class="pagesIndicator">● ○</div><div class="dock" id="dock"></div></div><button class="homebar lightBar" onclick="go('home')" aria-label="홈"></button></section>
 <section id="calendar" class="screen"><div class="status normal"><span id="calTime">12:43</span><div class="dynamic"></div><div class="signals">▂▅▇ <svg class="wifiSvg" viewBox="0 0 24 18"><path d="M2 5Q12 -3 22 5M6 10Q12 5 18 10M10 15Q12 13 14 15"/></svg><span class="battery" style="background:#111">82</span></div></div><div class="scroll" id="calScroll"><div class="calendar-header"><div class="topRow" style="padding:10px 0"><button class="year" onclick="changeMonth(-1)">‹ <span id="calYear">2026년</span></button><div><button style="color:var(--red)" onclick="openEditor('event')">＋</button><button style="color:var(--red)" onclick="changeMonth(1)">›</button></div></div><h1 id="calTitle">2026년 10월</h1><div class="calControl"><span class="today" onclick="showToday()">오늘 · 10월 24일 토요일</span><div><button onclick="switchCal('month')">월</button><button onclick="switchCal('week')">주</button></div></div></div><div class="calGrid" id="calGrid"></div><div class="agenda" id="agenda"></div></div><div class="navbottom" style="color:var(--red)"><button onclick="showToday()">오늘</button><button onclick="go('calendar')" style="font-size:15px;color:var(--red)">캘린더</button><button onclick="openEditor('event')">＋</button></div><button class="homebar" onclick="go('home')"></button></section>
@@ -175,5 +182,39 @@ lock.addEventListener('pointerdown',e=>{if(e.target.closest('button')||$('passPa
 lock.addEventListener('pointerup',e=>{if(!pointerStart)return;
   if(pointerStart.y-e.clientY>55&&Math.abs(pointerStart.x-e.clientX)<150)showPasscode();pointerStart=null
 },{passive:true});
+
+
+// Persistent unread counts. Opening a room clears that room's count.
+S.unread=S.unread||{};
+const previousOpenChatForUnread=openChat;
+openChat=function(key){S.unread[key]=0;save();previousOpenChatForUnread(key);};
+const previousAddIncomingForUnread=addIncoming;
+addIncoming=function(key,message){
+  if(!(current==='chat'&&who===key))S.unread[key]=(Number(S.unread[key])||0)+1;
+  previousAddIncomingForUnread(key,message);
+};
+const previousRenderKakaoForUnread=renderKakao;
+renderKakao=function(){
+ previousRenderKakaoForUnread();
+ const romanceButtons=Array.from($('kakaoList').querySelectorAll('button.rowline')).slice(0,3);
+ ROMANCE.forEach((k,i)=>{
+   const count=Number(S.unread[k])||0;
+   if(count>0&&romanceButtons[i]){
+      const badge=document.createElement('span');badge.className='wish-unread';badge.textContent=count>99?'99+':String(count);
+      romanceButtons[i].appendChild(badge);
+   }
+ });
+};
+// Keep unread counts consistent for pre-existing reply generation as well.
+// The original callback sends messages through its own pathway, so refresh badges on return.
+const previousGoForUnread=go;
+go=function(id){previousGoForUnread(id);if(id==='kakao')renderKakao();};
+// Make the passcode screen accessible to keyboard users as well as touch.
+document.addEventListener('keydown',ev=>{
+ if(current!=='lock'||!$('passPanel').classList.contains('visible'))return;
+ if(/^\d$/.test(ev.key)){pressDigit(ev.key);ev.preventDefault();}
+ else if(ev.key==='Backspace'){pressDigit('⌫');ev.preventDefault();}
+ else if(ev.key==='Escape'){hidePasscode();ev.preventDefault();}
+});
 
 </script></body></html>
