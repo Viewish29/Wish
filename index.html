@@ -64,4 +64,116 @@ const formerRenderChat=renderChat;renderChat=function(){formerRenderChat();if(!U
 // Do not auto-generate a romantic reply from classmates, professor or payment bots.
 const prevSendChat=sendChat;sendChat=function(ev){if(USERS[who])return prevSendChat(ev);ev.preventDefault();let input=$('chatInput');let txt=input.value.trim();if(!txt)return;seedMessages(who).push({date:nowStoryDate(),side:'mine',text:txt});input.value='';save();renderChat();$('chatScroll').scrollTop=$('chatScroll').scrollHeight};
 // Keep own edited content locally even after reloading.
+
+// Simulation refinements: background messages, no-reply reactions, and two-hour date spacing.
+// This only runs while the site is open; no notification permissions or server required.
+const ROMANCE=['sion','riku','yushi'];
+const FOLLOWUP={
+ sion:['무슨 일 있어? 바쁜가 보네. 시간 날 때 연락해 ㅎㅎ','오늘도 과제 중이야? 밥은 챙겨 먹었지?'],
+ riku:['읽었는데 답이 없네 ㅠㅠ 바쁜 거야?','보고 싶은데 오늘 잠깐이라도 못 봐?'],
+ yushi:['바쁜가 보네','아까 얘기한 거, 시간 될 때 답해줘']
+};
+let chatEnteredAt=0, lastInteractionAt=Date.now(), lastPassiveCheck=Date.now(), lastPassiveCharacter=-1;
+const originalGo=go;
+go=function(id){
+ const from=current;
+ if(from==='chat' && id!=='chat')chatEnteredAt=0;
+ originalGo(id);
+ if(id==='chat' && ROMANCE.includes(who)){
+   chatEnteredAt=Date.now();lastInteractionAt=Date.now();
+   // A reply is due only when the most recent message came from this person.
+   S.lastRead=S.lastRead||{};
+   let arr=S.messages[who]||[];
+   if(arr.at(-1)?.side==='theirs')S.lastRead[who]={at:Date.now(),messageCount:arr.length};
+   save();
+ }
+};
+const originalSendChat=sendChat;
+sendChat=function(ev){
+ let key=who;
+ originalSendChat(ev);
+ if(ROMANCE.includes(key)){
+   lastInteractionAt=Date.now();
+   S.lastRead=S.lastRead||{};delete S.lastRead[key];save();
+ }
+};
+const originalOpenChat=openChat;
+openChat=function(key){
+ originalOpenChat(key);
+ if(ROMANCE.includes(key)){
+   S.lastRead=S.lastRead||{};let a=S.messages[key]||[];
+   if(a.at(-1)?.side==='theirs')S.lastRead[key]={at:Date.now(),messageCount:a.length};
+   save();
+ }
+};
+function addIncoming(key,message){
+ if(!ROMANCE.includes(key))return;
+ let a=seedMessages(key);
+ a.push({date:nowStoryDate(),side:'theirs',text:message});
+ save();
+ if(current==='chat' && who===key){
+   renderChat();$('chatScroll').scrollTop=$('chatScroll').scrollHeight;
+ }else{
+   notify('kakao',`${USERS[key].nick}: ${message}`,{kind:'chat',key});
+   if(current==='kakao')renderKakao();
+ }
+}
+setInterval(()=>{
+ if(current==='lock')return;
+ let now=Date.now();
+ S.lastRead=S.lastRead||{};
+ for(let k of ROMANCE){
+   let entry=S.lastRead[k],a=S.messages[k]||[];
+   if(entry&&now-entry.at>75000&&entry.messageCount===a.length&&a.at(-1)?.side==='theirs'){
+     delete S.lastRead[k];
+     addIncoming(k,FOLLOWUP[k][a.length%FOLLOWUP[k].length]);
+     return;
+   }
+ }
+ // A gentle message may appear while another app is open; do not flood the user.
+ if(now-lastPassiveCheck>110000 && now-lastInteractionAt>35000){
+   lastPassiveCheck=now;
+   lastPassiveCharacter=(lastPassiveCharacter+1)%ROMANCE.length;
+   let k=ROMANCE[lastPassiveCharacter];
+   if(current!=='chat'||who!==k){
+     addIncoming(k,{
+       sion:'오늘 일정 다 끝났어? 잠깐 얼굴 볼 수 있나 해서 ㅎㅎ',
+       riku:'뭐해? 나 지금 네 생각하고 있었는데 ㅎㅎ',
+       yushi:'과제 다 했어?'
+     }[k]);
+   }
+ }
+},5000);
+function minutesOf(t){if(!/^\d{1,2}:\d{2}$/.test(t||''))return null;let [h,m]=t.split(':').map(Number);return h*60+m}
+function isDifferentDatePartner(a,b){return ROMANCE.includes(a.user)&&ROMANCE.includes(b.user)&&a.user!==b.user}
+function dateGapWarning(candidate){
+ let a=minutesOf(candidate.start),b=minutesOf(candidate.end);
+ if(a===null||b===null)return '';
+ let others=eventsOn(candidate.date);
+ for(let other of others){
+  if(!isDifferentDatePartner(candidate,other))continue;
+  let c=minutesOf(other.start),d=minutesOf(other.end);
+  if(c===null||d===null)continue;
+  let gap=Math.max(c-b,a-d);
+  if(gap<120)return `${USERS[other.user].nick} 일정과 최소 2시간 간격이 필요해요.`;
+ }
+ return '';
+}
+const originalEditorApply=editorApply;
+editorApply=async function(){
+ if(editing==='event'){
+  const candidate={date:$('editDate').value,user:$('editPerson').value,
+    start:$('editStart').value,end:$('editEnd').value};
+  const warning=dateGapWarning(candidate);
+  if(warning){toast(warning);return}
+ }
+ return originalEditorApply();
+};
+// Accessibility: allow swipe gesture from anywhere in lock screen, with mouse drag as fallback.
+let pointerStart=null;
+lock.addEventListener('pointerdown',e=>{if(e.target.closest('button')||$('passPanel').classList.contains('visible'))return;pointerStart={y:e.clientY,x:e.clientX}}, {passive:true});
+lock.addEventListener('pointerup',e=>{if(!pointerStart)return;
+  if(pointerStart.y-e.clientY>55&&Math.abs(pointerStart.x-e.clientX)<150)showPasscode();pointerStart=null
+},{passive:true});
+
 </script></body></html>
